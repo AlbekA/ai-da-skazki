@@ -1,0 +1,7 @@
+{
+  "name": "AI да сказки",
+  "description": "An application that generates personalized audio fairy tales for children using AI. Users can specify the child's name, a custom character, and a location to create a unique story, listen to it, and even participate in an interactive narrative.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
