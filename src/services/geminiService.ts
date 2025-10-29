@@ -3,14 +3,14 @@ import { GoogleGenAI, Modality } from "@google/genai";
 
 export async function generateAudio(storyText: string, voiceId: string): Promise<string> {
   if (!storyText.trim()) {
-    // Do not call the API for empty strings.
     return "";
   }
   try {
-    // FIX: The API key must be obtained from process.env.API_KEY.
+    // Fix: Use process.env.API_KEY as per coding guidelines.
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-        throw new Error("API_KEY is not available.");
+        // Fix: Update error message to reflect the new environment variable.
+        throw new Error("API_KEY is not available. Make sure it is set in your environment variables.");
     }
     const ai = new GoogleGenAI({ apiKey });
 

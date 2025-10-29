@@ -4,7 +4,7 @@ const URLS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/icon.svg'
+  '/vite.svg'
 ];
 
 self.addEventListener('install', event => {
