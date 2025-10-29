@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
-import { LockIcon } from './icons/LockIcon'; // Assuming LockIcon exists
 
 export type UserStatus = 'guest' | 'registered' | 'subscribed' | 'owner';
 

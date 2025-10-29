@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI, Chat } from "@google/genai";
-import { StoryForm, StoryFormData, UserStatus } from './components/StoryForm';
+import { StoryForm } from './components/StoryForm';
+import type { StoryFormData, UserStatus } from './components/StoryForm';
 import { StoryDisplay } from './components/StoryDisplay';
 import { Loader } from './components/Loader';
 import { Header } from './components/Header';
@@ -75,7 +76,7 @@ const App: React.FC = () => {
       }
   };
   
-  const generateStoryPrompt = (formData: StoryFormData, history: any[] = []) => {
+  const generateStoryPrompt = (formData: StoryFormData) => {
       const isCustom = formData.templateId === 'custom';
       let prompt = `Напиши начало доброй и увлекательной детской сказки объемом примерно в 4000 символов для ребенка по имени ${formData.name}. `;
       prompt += `${formData.name} — главный герой этой сказки, который действует, принимает решения и является центральным персонажем, а не просто наблюдателем. `;
