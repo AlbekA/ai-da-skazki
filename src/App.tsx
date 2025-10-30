@@ -104,8 +104,21 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const dataToSave = JSON.stringify({ user, usage, savedStories });
-        localStorage.setItem(LOCAL_STORAGE_KEY, dataToSave);
+        // Create a version of savedStories without the large audio data for storage.
+        const storiesToStore = savedStories.map(story => ({
+            ...story,
+            parts: story.parts.map(part => ({
+                text: part.text,
+                audioData: null, // Omit audio data to prevent storage quota errors
+            })),
+        }));
+
+        try {
+            const dataToSave = JSON.stringify({ user, usage, savedStories: storiesToStore });
+            localStorage.setItem(LOCAL_STORAGE_KEY, dataToSave);
+        } catch (error) {
+            console.error("Failed to save data to localStorage:", error);
+        }
     }, [user, usage, savedStories]);
     
     // --- PROMPT & RESPONSE LOGIC ---
@@ -233,7 +246,7 @@ const App: React.FC = () => {
         setError(null);
 
         try {
-            const response = await chatRef.current.sendMessage({ message: getPrompt({} as StoryFormData, { choice }) });
+            const response = await chatRef.current.sendMessage({ message: getPrompt(currentStory.formData, { choice }) });
             const result = await processResponse(response);
             if (typeof result !== 'object' || !('story' in result)) throw new Error("Invalid continuation.");
 
