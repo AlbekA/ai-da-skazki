@@ -8,6 +8,7 @@ import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { AuthModal } from './components/AuthModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
 import { SparklesIcon } from './components/icons/SparklesIcon';
+import { InstallPWA } from './components/InstallPWA';
 
 const API_KEY = process.env.API_KEY;
 if (!API_KEY) throw new Error("API_KEY environment variable is not set");
@@ -65,10 +66,30 @@ const App: React.FC = () => {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
     const [autoplayIndex, setAutoplayIndex] = useState<number | null>(null);
+    const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
 
     const chatRef = useRef<Chat | null>(null);
     const voiceIdRef = useRef<string>('Kore');
     
+    // --- SERVICE WORKER & PWA PROMPT ---
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => console.log('Service Worker registered with scope:', registration.scope))
+                .catch(error => console.log('Service Worker registration failed:', error));
+        }
+
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setInstallPromptEvent(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
     // --- LOCAL STORAGE & ROUTING ---
     useEffect(() => {
         try {
@@ -104,12 +125,11 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        // Create a version of savedStories without the large audio data for storage.
         const storiesToStore = savedStories.map(story => ({
             ...story,
             parts: story.parts.map(part => ({
                 text: part.text,
-                audioData: null, // Omit audio data to prevent storage quota errors
+                audioData: null,
             })),
         }));
 
@@ -167,7 +187,6 @@ const App: React.FC = () => {
     const handleCreateStory = useCallback(async (formData: StoryFormData) => {
         const today = new Date().toISOString().split('T')[0];
         
-        // --- Limit Checks for non-owners ---
         if (user.status !== 'owner') {
             if (formData.isInteractive && user.status !== 'subscribed') {
                 setShowSubscriptionModal(true);
@@ -220,7 +239,6 @@ const App: React.FC = () => {
             setCurrentStory(newStory);
             setSavedStories(prev => [newStory, ...prev]);
 
-            // --- Update usage stats ---
             if (user.status === 'guest' && !formData.isInteractive) {
                 setUsage(prev => ({...prev, guestSimpleCreations: prev.guestSimpleCreations + 1}));
             } else if (user.status === 'registered' && !formData.isInteractive) {
@@ -255,7 +273,7 @@ const App: React.FC = () => {
             const updatedStory = { ...currentStory, parts: [...currentStory.parts, newPart]};
 
             setCurrentStory(updatedStory);
-            setAutoplayIndex(updatedStory.parts.length - 1); // Trigger autoplay
+            setAutoplayIndex(updatedStory.parts.length - 1);
             setSavedStories(prev => prev.map(s => s.id === updatedStory.id ? updatedStory : s));
             if (!result.isFinal) {
                 setCurrentChoices(result.choices);
@@ -268,6 +286,17 @@ const App: React.FC = () => {
         }
     }, [currentStory]);
     
+    // --- PWA INSTALL HANDLERS ---
+    const handleInstall = async () => {
+        if (installPromptEvent) {
+            installPromptEvent.prompt();
+            const { outcome } = await installPromptEvent.userChoice;
+            console.log(`User response to the install prompt: ${outcome}`);
+            setInstallPromptEvent(null);
+        }
+    };
+    const handleDismissInstall = () => setInstallPromptEvent(null);
+
     // --- AUTH & VIEW HANDLERS ---
     const handleRegister = () => { setUser({ status: 'registered' }); setShowAuthModal(false); };
     const handleSubscribe = (tier: SubscriptionTier) => { setUser({ status: 'subscribed', tier }); setShowSubscriptionModal(false); };
@@ -357,6 +386,7 @@ const App: React.FC = () => {
                     {renderContent()}
                 </main>
             </div>
+            {installPromptEvent && <InstallPWA onInstall={handleInstall} onClose={handleDismissInstall} />}
             {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} onRegister={handleRegister} />}
             {showSubscriptionModal && <SubscriptionModal onClose={() => setShowSubscriptionModal(false)} onSubscribe={handleSubscribe} />}
              <style>{`.custom-scrollbar::-webkit-scrollbar { width: 8px; } .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }`}</style>
