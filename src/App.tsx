@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { StoryForm, StoryFormValues } from './components/StoryForm';
+import { StoryForm } from './components/StoryForm';
 import { StoryDisplay } from './components/StoryDisplay';
-import { Loader } from './components/Loader';
-import { Footer } from './components/Footer';
+import { generateStoryPart, generateAudio } from './services/geminiService';
 import { AuthModal } from './components/AuthModal';
 import { SubscriptionModal } from './components/SubscriptionModal';
-import { generateStoryPart, generateAudio } from './services/geminiService';
 import { supabase } from './supabaseClient';
-import { Session, User } from '@supabase/supabase-js';
-
+import type { Session, User } from '@supabase/supabase-js';
+import { Footer } from './components/Footer';
 
 interface StoryPart {
   text: string;
@@ -17,146 +15,176 @@ interface StoryPart {
 }
 
 const App: React.FC = () => {
-    const [storyParts, setStoryParts] = useState<StoryPart[]>([]);
-    const [choices, setChoices] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isLoadingNextPart, setIsLoadingNextPart] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [formValues, setFormValues] = useState<StoryFormValues | null>(null);
-    const [autoplayIndex, setAutoplayIndex] = useState<number | null>(null);
+  const [storyParts, setStoryParts] = useState<StoryPart[]>([]);
+  const [choices, setChoices] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingNextPart, setIsLoadingNextPart] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [voiceId, setVoiceId] = useState('Kore');
+  const [autoplayIndex, setAutoplayIndex] = useState<number | null>(null);
 
-    // Auth & Subscription State
-    const [_session, setSession] = useState<Session | null>(null);
-    const [user, setUser] = useState<User | null>(null);
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isSubModalOpen, setIsSubModalOpen] = useState(false);
-    
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-        });
+  // Auth & Subscription State
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [storyCount, setStoryCount] = useState(0);
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
+  
+  const MAX_FREE_STORIES_UNAUTH = 1;
+  const MAX_FREE_STORIES_AUTH = 3;
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-        });
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
 
-        return () => subscription.unsubscribe();
-    }, []);
-
-
-    const handleStoryCreate = async (values: StoryFormValues) => {
-        setIsLoading(true);
-        setError(null);
-        setStoryParts([]);
-        setChoices([]);
-        setFormValues(values);
-
-        const prompt = `Напиши первую часть доброй и волшебной сказки для ребенка ${values.age} лет. 
-        Главный герой: ${values.character}. 
-        Место действия: ${values.setting}. 
-        ${values.moral ? `Основная мысль сказки: ${values.moral}.` : ''} 
-        Сказка должна быть написана на русском языке. 
-        Не делай сказку слишком длинной, 2-3 абзаца. 
-        В конце предложи три варианта продолжения.`;
-        
-        await processNewStoryPart(prompt, true);
-        setIsLoading(false);
-    };
-
-    const handleChoiceSelected = async (choice: string) => {
-        setIsLoadingNextPart(true);
-        setError(null);
-        setChoices([]);
-
-        const storyHistory = storyParts.map(p => p.text).join('\n\n');
-        const prompt = `Продолжи сказку, основываясь на выборе пользователя.
-        Предыдущая часть сказки: "${storyHistory}"
-        Выбор пользователя: "${choice}"
-        
-        Напиши следующую часть сказки (2-3 абзаца). Она должна быть логичным продолжением.
-        Сказка должна быть написана на русском языке для ребенка ${formValues?.age} лет.
-        В конце снова предложи три новых варианта продолжения.`;
-
-        await processNewStoryPart(prompt, false);
-        setIsLoadingNextPart(false);
-    };
-    
-    const processNewStoryPart = async (prompt: string, isFirstPart: boolean) => {
-        try {
-            const { story, choices: newChoices } = await generateStoryPart(prompt);
-            const audioData = await generateAudio(story, formValues?.voice || 'Kore');
-
-            const newPart: StoryPart = { text: story, audioData };
-
-            setStoryParts(prev => {
-                if (!isFirstPart) {
-                    setAutoplayIndex(prev.length); // Autoplay the new part
-                }
-                return [...prev, newPart];
-            });
-            setChoices(newChoices);
-
-        } catch (err: any) {
-            setError('Произошла ошибка при создании сказки. Пожалуйста, попробуйте еще раз.');
-            console.error(err);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (_event === 'SIGNED_IN') {
+          setShowAuthModal(false);
         }
-    }
-
-    const handleShare = () => {
-        const storyText = storyParts.map(p => p.text).join('\n\n');
-        const url = window.location.href;
-        const shareText = `Послушай сказку, которую я создал с помощью "AI да сказки"!\n\n${storyText}\n\nСоздай свою сказку здесь: ${url}`;
-        navigator.clipboard.writeText(shareText);
-    };
-
-    const handleProfileClick = () => {
-      if(user) {
-        supabase.auth.signOut();
-      } else {
-        setIsAuthModalOpen(true);
       }
-    }
-    
-    const handleSubscribe = (tier: 'tier1' | 'tier2') => {
-        console.log(`Subscribing to ${tier}`);
-        setIsSubModalOpen(false);
-    }
-
-
-    return (
-        <div className="bg-slate-900 text-white min-h-screen font-sans pb-24">
-            <div className="max-w-3xl mx-auto px-4 py-8">
-                <Header onProfileClick={handleProfileClick} />
-                <main className="mt-10">
-                    {isLoading && <Loader />}
-                    {!isLoading && storyParts.length === 0 && (
-                        <StoryForm onStoryCreate={handleStoryCreate} isLoading={isLoading} />
-                    )}
-                    {storyParts.length > 0 && (
-                       <StoryDisplay 
-                         storyParts={storyParts}
-                         choices={choices}
-                         onChoiceSelected={handleChoiceSelected}
-                         isLoadingNextPart={isLoadingNextPart}
-                         onShare={handleShare}
-                         autoplayIndex={autoplayIndex}
-                         onAutoplayComplete={() => setAutoplayIndex(null)}
-                       />
-                    )}
-                     {error && (
-                        <div className="mt-6 text-center bg-red-500/20 text-red-300 p-4 rounded-lg">
-                            {error}
-                        </div>
-                    )}
-                </main>
-            </div>
-            <Footer />
-            {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}
-            {isSubModalOpen && <SubscriptionModal onClose={() => setIsSubModalOpen(false)} onSubscribe={handleSubscribe} />}
-        </div>
     );
-}
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    // A simple way to track story creations for this session.
+    // In a real app, this would be stored in a database.
+    const count = localStorage.getItem('storyCount');
+    setStoryCount(count ? parseInt(count, 10) : 0);
+
+    // This is a simulation of subscription status.
+    const tier = localStorage.getItem('subscriptionTier');
+    setSubscriptionTier(tier);
+  }, [user]);
+
+
+  const checkUsageLimit = () => {
+    if (subscriptionTier) return true; // Subscribers have no limits
+    
+    const limit = user ? MAX_FREE_STORIES_AUTH : MAX_FREE_STORIES_UNAUTH;
+
+    if (storyCount >= limit) {
+      if (!user) {
+        setShowAuthModal(true);
+      } else {
+        setShowSubscriptionModal(true);
+      }
+      return false;
+    }
+    return true;
+  }
+
+  const handleStoryStart = async (prompt: string, selectedVoiceId: string) => {
+    if (!checkUsageLimit()) return;
+    
+    setIsLoading(true);
+    setError(null);
+    setStoryParts([]);
+    setChoices([]);
+    setVoiceId(selectedVoiceId);
+
+    try {
+      const { story, choices: newChoices } = await generateStoryPart(prompt);
+      const audioData = await generateAudio(story, selectedVoiceId);
+      
+      setStoryParts([{ text: story, audioData }]);
+      setChoices(newChoices);
+      setAutoplayIndex(0); // Autoplay the first part
+
+      const newCount = storyCount + 1;
+      setStoryCount(newCount);
+      localStorage.setItem('storyCount', newCount.toString());
+
+    } catch (err) {
+      setError('Произошла ошибка при создании сказки. Пожалуйста, попробуйте снова.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChoiceSelected = async (choice: string) => {
+    setIsLoadingNextPart(true);
+    setError(null);
+    setChoices([]);
+
+    const storyHistory = storyParts.map(p => p.text).join('\n\n');
+    const prompt = `
+      Продолжи сказку на русском языке, основываясь на выборе пользователя.
+      Предыдущие части:
+      ---
+      ${storyHistory}
+      ---
+      Выбор пользователя: "${choice}"
+
+      Напиши следующую часть истории (2-3 абзаца). Она должна быть логичным продолжением и снова заканчиваться на интригующем моменте.
+      Сгенерируй JSON с двумя ключами: "story" (следующая часть сказки) и "choices" (массив из трех новых коротких вариантов продолжения).
+    `;
+
+    try {
+      const { story, choices: newChoices } = await generateStoryPart(prompt);
+      const audioData = await generateAudio(story, voiceId);
+      
+      const newPart = { text: story, audioData };
+      setStoryParts(prevParts => [...prevParts, newPart]);
+      setChoices(newChoices);
+      setAutoplayIndex(storyParts.length); // Autoplay the new part
+    } catch (err) {
+      setError('Не удалось загрузить продолжение. Пожалуйста, попробуйте выбрать еще раз.');
+      console.error(err);
+    } finally {
+      setIsLoadingNextPart(false);
+    }
+  };
+
+  const handleShare = () => {
+    const storyText = storyParts.map(part => part.text).join('\n\n');
+    const url = window.location.href;
+    const shareText = `Я создал волшебную сказку!\n\n${storyText.substring(0, 200)}...\n\nЧитайте дальше здесь: ${url}`;
+    navigator.clipboard.writeText(shareText);
+  };
+
+  const handleSubscribe = (tier: 'tier1' | 'tier2') => {
+    // This is a simulation
+    console.log(`Subscribed to ${tier}`);
+    setSubscriptionTier(tier);
+    localStorage.setItem('subscriptionTier', tier);
+    setShowSubscriptionModal(false);
+  }
+
+  return (
+    <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
+      <div className="w-full max-w-3xl mx-auto space-y-8 pb-20">
+        <Header onProfileClick={() => !user ? setShowAuthModal(true) : alert('Профиль в разработке!')} />
+        <main>
+          {error && <p className="text-center text-red-400 bg-red-500/10 p-3 rounded-md mb-4">{error}</p>}
+          
+          {storyParts.length === 0 ? (
+            <StoryForm onStoryStart={handleStoryStart} isLoading={isLoading} />
+          ) : (
+            <StoryDisplay
+              storyParts={storyParts}
+              choices={choices}
+              onChoiceSelected={handleChoiceSelected}
+              isLoadingNextPart={isLoadingNextPart}
+              onShare={handleShare}
+              autoplayIndex={autoplayIndex}
+              onAutoplayComplete={() => setAutoplayIndex(null)}
+            />
+          )}
+        </main>
+      </div>
+      <Footer />
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      {showSubscriptionModal && <SubscriptionModal onClose={() => setShowSubscriptionModal(false)} onSubscribe={handleSubscribe} />}
+    </div>
+  );
+};
 
 export default App;

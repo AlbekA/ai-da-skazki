@@ -1,150 +1,123 @@
 import React, { useState } from 'react';
 import { Loader } from './Loader';
 
-export interface StoryFormValues {
-  character: string;
-  setting: string;
-  age: string;
-  moral: string;
-  voice: 'Kore' | 'Puck' | 'Zephyr' | 'Charon' | 'Fenrir';
-}
-
 interface StoryFormProps {
-  onStoryCreate: (values: StoryFormValues) => void;
+  onStoryStart: (prompt: string, voiceId: string) => void;
   isLoading: boolean;
 }
 
-export const StoryForm: React.FC<StoryFormProps> = ({ onStoryCreate, isLoading }) => {
-  const [values, setValues] = useState<StoryFormValues>({
-    character: '',
-    setting: '',
-    age: '5',
-    moral: '',
-    voice: 'Kore',
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
-  };
+export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading }) => {
+  const [character, setCharacter] = useState('');
+  const [setting, setSetting] = useState('');
+  const [feature, setFeature] = useState('');
+  const [age, setAge] = useState('5');
+  const [voice, setVoice] = useState('Kore'); // Default voice
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onStoryCreate(values);
-  };
+    if (isLoading) return;
 
-  const voiceOptions = [
-    { id: 'Kore', name: 'Женский 1 (Kore)' },
-    { id: 'Puck', name: 'Мужской 1 (Puck)' },
-    { id: 'Zephyr', name: 'Женский 2 (Zephyr)' },
-    { id: 'Charon', name: 'Мужской 2 (Charon)' },
-    { id: 'Fenrir', name: 'Мужской 3 (Fenrir)' },
-  ];
+    const prompt = `
+      Напиши начало волшебной сказки на русском языке для ребенка ${age} лет.
+      - Главный герой: ${character || 'смелый котенок'}
+      - Место действия: ${setting || 'загадочный лес'}
+      - Ключевая особенность сюжета: ${feature || 'поиски волшебного цветка'}
+      
+      История должна быть доброй, увлекательной и закончиться на интригующем моменте, предлагая читателю сделать выбор.
+      Сгенерируй JSON с двумя ключами: "story" (первая часть сказки, 2-3 абзаца) и "choices" (массив из трех коротких вариантов продолжения).
+    `;
+
+    onStoryStart(prompt.trim(), voice);
+  };
 
   if (isLoading) {
     return <Loader />;
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto animate-fade-in">
-      <form onSubmit={handleSubmit} className="bg-slate-800/50 p-8 rounded-2xl shadow-lg border border-slate-700 space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="character" className="block text-sm font-medium text-slate-300">
-              Главный герой
-            </label>
-            <input
-              type="text"
-              name="character"
-              id="character"
-              value={values.character}
-              onChange={handleChange}
-              placeholder="Например, храбрый мышонок"
-              required
-              className="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200"
-            />
-          </div>
-          <div>
-            <label htmlFor="setting" className="block text-sm font-medium text-slate-300">
-              Место действия
-            </label>
-            <input
-              type="text"
-              name="setting"
-              id="setting"
-              value={values.setting}
-              onChange={handleChange}
-              placeholder="Например, заколдованный лес"
-              required
-              className="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200"
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800/50 p-6 md:p-8 rounded-2xl shadow-lg border border-slate-700 animate-fade-in">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="character" className="block text-sm font-medium text-slate-300 mb-1">
+            Главный герой
+          </label>
+          <input
+            type="text"
+            id="character"
+            value={character}
+            onChange={(e) => setCharacter(e.target.value)}
+            placeholder="Например, храбрый мышонок"
+            className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
         </div>
         <div>
-          <label htmlFor="moral" className="block text-sm font-medium text-slate-300">
-            Основная мысль или мораль сказки (необязательно)
+          <label htmlFor="setting" className="block text-sm font-medium text-slate-300 mb-1">
+            Место действия
           </label>
-          <textarea
-            name="moral"
-            id="moral"
-            value={values.moral}
-            onChange={handleChange}
-            rows={2}
-            placeholder="Например, о важности дружбы"
-            className="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200"
-          ></textarea>
+          <input
+            type="text"
+            id="setting"
+            value={setting}
+            onChange={(e) => setSetting(e.target.value)}
+            placeholder="Например, хрустальный замок"
+            className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+          />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      </div>
+      <div>
+        <label htmlFor="feature" className="block text-sm font-medium text-slate-300 mb-1">
+          О чем будет сказка?
+        </label>
+        <input
+          type="text"
+          id="feature"
+          value={feature}
+          onChange={(e) => setFeature(e.target.value)}
+          placeholder="Например, о спасении друга"
+          className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="age" className="block text-sm font-medium text-slate-300">
+            <label htmlFor="age" className="block text-sm font-medium text-slate-300 mb-1">
               Возраст ребенка
             </label>
-            <input
-              type="number"
-              name="age"
-              id="age"
-              value={values.age}
-              onChange={handleChange}
-              min="2"
-              max="12"
-              required
-              className="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200"
-            />
-          </div>
-          <div>
-            <label htmlFor="voice" className="block text-sm font-medium text-slate-300">
-              Голос диктора
-            </label>
             <select
-              name="voice"
-              id="voice"
-              value={values.voice}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full bg-slate-700 border-slate-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-slate-200"
+              id="age"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
             >
-              {voiceOptions.map(option => (
-                <option key={option.id} value={option.id}>{option.name}</option>
-              ))}
+              <option value="3">3-4 года</option>
+              <option value="5">5-6 лет</option>
+              <option value="7">7-8 лет</option>
+              <option value="9">9+ лет</option>
             </select>
           </div>
-        </div>
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 disabled:bg-indigo-500/50 disabled:cursor-not-allowed transition-all"
-          >
-            {isLoading ? 'Создаем волшебство...' : 'Создать сказку'}
-          </button>
-        </div>
-      </form>
-       <style>{`
-        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
+          <div>
+            <label htmlFor="voice" className="block text-sm font-medium text-slate-300 mb-1">
+              Голос рассказчика
+            </label>
+            <select
+              id="voice"
+              value={voice}
+              onChange={(e) => setVoice(e.target.value)}
+              className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+            >
+              <option value="Kore">Женский (Спокойный)</option>
+              <option value="Puck">Мужской (Дружелюбный)</option>
+              <option value="Zephyr">Женский (Энергичный)</option>
+              <option value="Charon">Мужской (Глубокий)</option>
+            </select>
+          </div>
+      </div>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full px-6 py-4 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition-all transform hover:scale-105 disabled:bg-indigo-500/50"
+      >
+        {isLoading ? 'Создаем магию...' : 'Начать сказку'}
+      </button>
+    </form>
   );
 };

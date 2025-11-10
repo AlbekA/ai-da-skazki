@@ -27,8 +27,8 @@ export async function generateStoryPart(prompt: string): Promise<{ story: string
             }
         }
     });
-
-    const jsonText = response.text?.trim();
+    // Fix: Access the text property directly from the response.
+    const jsonText = response.text.trim();
     if (!jsonText || !jsonText.startsWith('{') || !jsonText.endsWith('}')) {
         console.error("Received non-JSON or empty response:", jsonText);
         throw new Error("API did not return valid JSON.");
