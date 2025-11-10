@@ -8,6 +8,7 @@ import { SubscriptionModal } from './components/SubscriptionModal';
 import { supabase } from './supabaseClient';
 import type { Session, User } from '@supabase/supabase-js';
 import { Footer } from './components/Footer';
+import { ProfileModal } from './components/ProfileModal';
 
 interface StoryPart {
   text: string;
@@ -26,6 +27,7 @@ const App: React.FC = () => {
   // Auth & Subscription State
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [_session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [storyCount, setStoryCount] = useState(0);
@@ -53,19 +55,15 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // A simple way to track story creations for this session.
-    // In a real app, this would be stored in a database.
     const count = localStorage.getItem('storyCount');
     setStoryCount(count ? parseInt(count, 10) : 0);
-
-    // This is a simulation of subscription status.
     const tier = localStorage.getItem('subscriptionTier');
     setSubscriptionTier(tier);
   }, [user]);
 
 
   const checkUsageLimit = () => {
-    if (subscriptionTier) return true; // Subscribers have no limits
+    if (subscriptionTier) return true;
     
     const limit = user ? MAX_FREE_STORIES_AUTH : MAX_FREE_STORIES_UNAUTH;
 
@@ -81,6 +79,10 @@ const App: React.FC = () => {
   }
 
   const handleStoryStart = async (prompt: string, selectedVoiceId: string, isInteractive: boolean) => {
+    if (isInteractive && !subscriptionTier) {
+      handleLockClick();
+      return;
+    }
     if (!checkUsageLimit()) return;
     
     setIsLoading(true);
@@ -111,7 +113,7 @@ const App: React.FC = () => {
       
       setStoryParts([{ text: story, audioData }]);
       setChoices(newChoices || []);
-      setAutoplayIndex(0); // Autoplay the first part
+      setAutoplayIndex(0);
 
       const newCount = storyCount + 1;
       setStoryCount(newCount);
@@ -150,7 +152,7 @@ const App: React.FC = () => {
       const newPart = { text: story, audioData };
       setStoryParts(prevParts => [...prevParts, newPart]);
       setChoices(newChoices || []);
-      setAutoplayIndex(storyParts.length); // Autoplay the new part
+      setAutoplayIndex(storyParts.length);
     } catch (err) {
       setError('Не удалось загрузить продолжение. Пожалуйста, попробуйте выбрать еще раз.');
       console.error(err);
@@ -167,7 +169,6 @@ const App: React.FC = () => {
   };
 
   const handleSubscribe = (tier: 'tier1' | 'tier2') => {
-    // This is a simulation
     console.log(`Subscribed to ${tier}`);
     setSubscriptionTier(tier);
     localStorage.setItem('subscriptionTier', tier);
@@ -177,15 +178,42 @@ const App: React.FC = () => {
   const handleLockClick = () => {
     if (!user) {
         setShowAuthModal(true);
-    } else {
+    } else if (!subscriptionTier) {
         setShowSubscriptionModal(true);
     }
   }
 
+  const handleProfileClick = () => {
+    if (!user) {
+      setShowAuthModal(true);
+    } else {
+      setShowProfileModal(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setSubscriptionTier(null);
+    localStorage.removeItem('subscriptionTier');
+    localStorage.removeItem('storyCount'); // Reset for guests
+    setStoryCount(0);
+    setShowProfileModal(false);
+  };
+  
+  const storyLimit = user ? MAX_FREE_STORIES_AUTH : MAX_FREE_STORIES_UNAUTH;
+  const storiesRemaining = Math.max(0, storyLimit - storyCount);
+
   return (
     <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
       <div className="w-full max-w-3xl mx-auto space-y-8 pb-20">
-        <Header onProfileClick={() => !user ? setShowAuthModal(true) : alert('Профиль в разработке!')} />
+        <Header 
+          onProfileClick={handleProfileClick} 
+          storiesRemaining={storiesRemaining}
+          storyLimit={storyLimit}
+          hasSubscription={!!subscriptionTier}
+        />
         <main>
           {error && <p className="text-center text-red-400 bg-red-500/10 p-3 rounded-md mb-4">{error}</p>}
           
@@ -194,6 +222,7 @@ const App: React.FC = () => {
               onStoryStart={handleStoryStart} 
               isLoading={isLoading} 
               user={user}
+              subscriptionTier={subscriptionTier}
               onLockClick={handleLockClick}
             />
           ) : (
@@ -212,6 +241,15 @@ const App: React.FC = () => {
       <Footer />
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
       {showSubscriptionModal && <SubscriptionModal onClose={() => setShowSubscriptionModal(false)} onSubscribe={handleSubscribe} />}
+      {showProfileModal && user && (
+        <ProfileModal 
+          user={user}
+          subscriptionTier={subscriptionTier}
+          storyCount={storyCount}
+          onClose={() => setShowProfileModal(false)}
+          onLogout={handleLogout}
+        />
+      )}
     </div>
   );
 };

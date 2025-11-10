@@ -4,9 +4,12 @@ import { UserIcon } from './icons/UserIcon';
 
 interface HeaderProps {
     onProfileClick: () => void;
+    storiesRemaining: number;
+    storyLimit: number;
+    hasSubscription: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
+export const Header: React.FC<HeaderProps> = ({ onProfileClick, storiesRemaining, storyLimit, hasSubscription }) => {
   return (
     <header className="text-center relative">
       <div className="flex items-center justify-center gap-4">
@@ -19,6 +22,11 @@ export const Header: React.FC<HeaderProps> = ({ onProfileClick }) => {
       <p className="mt-2 text-lg text-slate-400">
         Создайте волшебную сказку для вашего ребенка
       </p>
+      {!hasSubscription && (
+        <p className="mt-1 text-sm text-slate-500">
+          {`У вас осталось ${storiesRemaining} из ${storyLimit} бесплатных сказок.`}
+        </p>
+      )}
       <button 
         onClick={onProfileClick}
         className="absolute top-1/2 -translate-y-1/2 right-0 flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-indigo-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition-all"
