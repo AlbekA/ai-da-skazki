@@ -34,28 +34,28 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ onClose, o
             <div className="border-2 border-slate-600 rounded-lg p-6 flex flex-col hover:border-indigo-500 transition-all">
                 <h3 className="text-xl font-semibold text-slate-200">Волшебник</h3>
                  <p className="text-slate-400 text-sm mb-4">Для ежедневных историй</p>
-                <p className="text-4xl font-bold">399₽<span className="text-base font-medium text-slate-400">/мес</span></p>
+                <p className="text-4xl font-bold">299₽<span className="text-base font-medium text-slate-400">/мес</span></p>
                 <ul className="text-slate-300 space-y-2 my-6 text-left">
-                    <li className="flex items-center gap-3"><span className="text-indigo-400">✔</span> 3 новые сказки каждый день</li>
-                    <li className="flex items-center gap-3"><span className="text-indigo-400">✔</span> Интерактивные сказки</li>
+                    <li className="flex items-center gap-3"><span className="text-indigo-400">✔</span> 2 новые сказки каждый день</li>
+                    <li className="flex items-center gap-3"><span className="text-indigo-400">✔</span> Хранение сказок 7 дней</li>
                     <li className="flex items-center gap-3"><span className="text-indigo-400">✔</span> Выбор голоса диктора</li>
+                    <li className="flex items-center gap-3 text-slate-500"><span className="text-slate-600">✘</span> Интерактивные сказки</li>
                 </ul>
                 <button onClick={() => onSubscribe('tier1')} className="w-full mt-auto px-4 py-2 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500">Выбрать</button>
-                 <p className="text-center text-sm text-slate-400 mt-3">или 3590₽/год (экономия 1198₽)</p>
             </div>
             {/* Tier 2 Plan */}
              <div className="border-2 border-purple-500 rounded-lg p-6 flex flex-col relative overflow-hidden">
                 <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">ВЫГОДНО</div>
                 <h3 className="text-xl font-semibold text-slate-200">Сказочник</h3>
                 <p className="text-slate-400 text-sm mb-4">Для самых любознательных</p>
-                <p className="text-4xl font-bold">790₽<span className="text-base font-medium text-slate-400">/мес</span></p>
+                <p className="text-4xl font-bold">699₽<span className="text-base font-medium text-slate-400">/мес</span></p>
                 <ul className="text-slate-300 space-y-2 my-6 text-left">
-                    <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> <span className="font-bold">7 новых сказок каждый день</span></li>
-                    <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> Интерактивные сказки</li>
+                    <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> <span className="font-bold">5 новых сказок каждый день</span></li>
+                    <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> Хранение сказок 30 дней</li>
                     <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> Выбор голоса диктора</li>
+                    <li className="flex items-center gap-3"><span className="text-purple-400">✔</span> Интерактивные сказки</li>
                 </ul>
                 <button onClick={() => onSubscribe('tier2')} className="w-full mt-auto px-4 py-2 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-purple-500">Выбрать</button>
-                <p className="text-center text-sm text-slate-400 mt-3">или 7390₽/год (экономия 2090₽)</p>
             </div>
         </div>
         

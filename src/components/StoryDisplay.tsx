@@ -21,7 +21,6 @@ interface StoryDisplayProps {
 
 export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices, onChoiceSelected, isLoadingNextPart, onShare, autoplayIndex, onAutoplayComplete }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentlyPlayingIndex, setCurrentlyPlayingIndex] = useState<number | null>(null);
   const [audioBuffers, setAudioBuffers] = useState<AudioBuffer[]>([]);
   const [shareConfirmation, setShareConfirmation] = useState(false);
   
@@ -30,7 +29,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
   const autoplaySourceRef = useRef<AudioBufferSourceNode | null>(null);
   const nextStartTimeRef = useRef<number>(0);
 
-  const initAudioContext = useCallback(() => {
+  const initAudioContext = () => {
     if (!audioContextRef.current) {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioContext) {
@@ -40,41 +39,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
     if (audioContextRef.current?.state === 'suspended') {
         audioContextRef.current.resume();
     }
-  }, []);
-
-  const stopPlayback = useCallback((isUnmounting = false) => {
-    audioSourcesRef.current.forEach(source => { try { source.stop(); } catch (e) {} });
-    audioSourcesRef.current = [];
-    if (autoplaySourceRef.current) {
-        try { autoplaySourceRef.current.stop(); } catch (e) {}
-        autoplaySourceRef.current = null;
-    }
-    if(!isUnmounting) {
-      setIsPlaying(false);
-      setCurrentlyPlayingIndex(null);
-    }
-  }, []);
-
-  const playSegment = useCallback((index: number) => {
-    if (!audioContextRef.current || !audioBuffers[index]) return;
-    initAudioContext();
-    stopPlayback();
-    
-    const source = audioContextRef.current.createBufferSource();
-    source.buffer = audioBuffers[index];
-    source.connect(audioContextRef.current.destination);
-    source.start();
-    setIsPlaying(true);
-    setCurrentlyPlayingIndex(index);
-    source.onended = () => {
-        if (autoplaySourceRef.current === source) {
-            setIsPlaying(false);
-            autoplaySourceRef.current = null;
-            setCurrentlyPlayingIndex(null);
-        }
-    };
-    autoplaySourceRef.current = source;
-  }, [audioBuffers, initAudioContext, stopPlayback]);
+  }
 
   useEffect(() => {
     const setupAudio = async () => {
@@ -98,14 +63,43 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
     return () => {
       stopPlayback(true);
     };
-  }, [storyParts, initAudioContext, stopPlayback]);
+  }, [storyParts]);
 
   useEffect(() => {
       if (autoplayIndex !== null && audioBuffers[autoplayIndex]) {
           playSegment(autoplayIndex);
           onAutoplayComplete();
       }
-  }, [autoplayIndex, audioBuffers, onAutoplayComplete, playSegment]);
+  }, [autoplayIndex, audioBuffers]);
+
+  const stopPlayback = (isUnmounting = false) => {
+    audioSourcesRef.current.forEach(source => { try { source.stop(); } catch (e) {} });
+    audioSourcesRef.current = [];
+    if (autoplaySourceRef.current) {
+        try { autoplaySourceRef.current.stop(); } catch (e) {}
+        autoplaySourceRef.current = null;
+    }
+    if(!isUnmounting) setIsPlaying(false);
+  };
+
+  const playSegment = (index: number) => {
+    if (!audioContextRef.current || !audioBuffers[index]) return;
+    initAudioContext();
+    stopPlayback();
+    
+    const source = audioContextRef.current.createBufferSource();
+    source.buffer = audioBuffers[index];
+    source.connect(audioContextRef.current.destination);
+    source.start();
+    setIsPlaying(true);
+    source.onended = () => {
+        if (autoplaySourceRef.current === source) {
+            setIsPlaying(false);
+            autoplaySourceRef.current = null;
+        }
+    };
+    autoplaySourceRef.current = source;
+  }
 
   const handlePlayPause = useCallback(() => {
     initAudioContext();
@@ -125,10 +119,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
             source.start(nextStartTimeRef.current);
             
             if (index === audioBuffers.length - 1) {
-                source.onended = () => {
-                  setIsPlaying(false);
-                  setCurrentlyPlayingIndex(null);
-                };
+                source.onended = () => setIsPlaying(false);
             }
 
             nextStartTimeRef.current += buffer.duration;
@@ -136,7 +127,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
         });
       }
     }
-  }, [isPlaying, audioBuffers, initAudioContext, stopPlayback]);
+  }, [isPlaying, audioBuffers]);
 
   const handleShare = () => {
       onShare();
@@ -176,27 +167,7 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
 
       <div className="max-h-[40vh] overflow-y-auto p-4 bg-slate-900/50 rounded-lg space-y-4 text-slate-300 leading-relaxed custom-scrollbar">
         {storyParts.map((part, index) => (
-          <div key={index} className="flex items-start gap-3 group">
-            <button
-              onClick={() => {
-                if (currentlyPlayingIndex === index) {
-                  stopPlayback();
-                } else {
-                  playSegment(index);
-                }
-              }}
-              disabled={!audioBuffers[index]}
-              aria-label={currentlyPlayingIndex === index ? `Pause part ${index + 1}` : `Play part ${index + 1}`}
-              className="mt-1 flex-shrink-0 w-8 h-8 rounded-full bg-slate-700 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group-hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500"
-            >
-              {currentlyPlayingIndex === index ? (
-                <PauseIcon className="w-4 h-4" />
-              ) : (
-                <PlayIcon className="w-4 h-4" />
-              )}
-            </button>
-            <p className="flex-1 pt-1">{part.text}</p>
-          </div>
+          <p key={index}>{part.text}</p>
         ))}
       </div>
 

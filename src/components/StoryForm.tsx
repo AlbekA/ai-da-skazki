@@ -1,11 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { SparklesIcon } from './icons/SparklesIcon';
-import type { StoryFormData, UserStatus } from './types'; // <-- импорт только типов
+import { LockIcon } from './icons/LockIcon'; // Assuming LockIcon exists
+
+export type UserStatus = 'guest' | 'registered' | 'subscribed' | 'owner';
 
 interface StoryFormProps {
   onSubmit: (formData: StoryFormData) => void;
   isLoading: boolean;
   userStatus: UserStatus;
+  onPremiumFeatureClick: () => void;
+  remainingCreations: number | null;
+}
+
+export interface StoryFormData {
+  name: string;
+  character: string;
+  location: string;
+  voiceId: string;
+  templateId: string;
+  isInteractive: boolean;
 }
 
 const voiceOptions = [
@@ -17,20 +30,21 @@ const voiceOptions = [
 ];
 
 const storyTemplates = [
-  { id: 'custom', title: 'Своя история', description: 'Полностью ваша история.', characterPlaceholder: 'Например, храбрый котенок', locationPlaceholder: 'Например, волшебный лес' },
-  { id: 'forest-adventure', title: 'Приключение в лесу', description: 'Сказка о дружбе и смелости в волшебном лесу.', characterPlaceholder: 'любопытный лисенок', locationPlaceholder: 'Шепчущий лес' },
-  { id: 'space-journey', title: 'Космическое путешествие', description: 'История о полете к далеким звездам и новых открытиях.', characterPlaceholder: 'отважный робот-астронавт', locationPlaceholder: 'туманность Ориона' },
-  { id: 'underwater-world', title: 'Тайны подводного мира', description: 'Погружение в красочный мир коралловых рифов и его обитателей.', characterPlaceholder: 'веселый дельфин', locationPlaceholder: 'Коралловый город' },
-  { id: 'magic-castle', title: 'Загадка волшебного замка', description: 'Сказка о тайнах старинного замка, где живет магия.', characterPlaceholder: 'маленький призрак', locationPlaceholder: 'замок Спящей Луны' },
-  { id: 'dragon-friend', title: 'Дружба с драконом', description: 'История о том, как ребенок подружился с настоящим драконом.', characterPlaceholder: 'добрый огнедышащий дракончик', locationPlaceholder: 'Драконьи горы' },
-  { id: 'detective-story', title: 'Маленький детектив', description: 'Запутанная история, где главный герой расследует пропажу сладостей.', characterPlaceholder: 'проницательный хомяк-сыщик', locationPlaceholder: 'город Сладкоежек' },
-  { id: 'time-travel', title: 'Путешествие во времени', description: 'Приключение с машиной времени, динозаврами и рыцарями.', characterPlaceholder: 'мудрая сова-профессор', locationPlaceholder: 'эпоха динозавров' },
-  { id: 'circus-dream', title: 'Цирковая мечта', description: 'История о том, как мечта выступить на арене цирка стала реальностью.', characterPlaceholder: 'талантливый слоненок-жонглер', locationPlaceholder: 'цирк-шапито "Фантазия"' },
-  { id: 'candy-kingdom', title: 'Королевство сладостей', description: 'Сладкая сказка о приключениях в стране из шоколада и мармелада.', characterPlaceholder: 'зефирный человечек', locationPlaceholder: 'Шоколадная река' },
-  { id: 'talking-animals', title: 'Говорящие животные', description: 'История о ферме, где все животные умеют разговаривать.', characterPlaceholder: 'хитрый говорящий кот', locationPlaceholder: 'ферма "Солнечный луг"' },
+    { id: 'custom', title: 'Своя история', description: 'Полностью ваша история.', characterPlaceholder: 'Например, храбрый котенок', locationPlaceholder: 'Например, волшебный лес' },
+    { id: 'forest-adventure', title: 'Приключение в лесу', description: 'Сказка о дружбе и смелости в волшебном лесу.', characterPlaceholder: 'любопытный лисенок', locationPlaceholder: 'Шепчущий лес' },
+    { id: 'space-journey', title: 'Космическое путешествие', description: 'История о полете к далеким звездам и новых открытиях.', characterPlaceholder: 'отважный робот-астронавт', locationPlaceholder: 'туманность Ориона' },
+    { id: 'underwater-world', title: 'Тайны подводного мира', description: 'Погружение в красочный мир коралловых рифов и его обитателей.', characterPlaceholder: 'веселый дельфин', locationPlaceholder: 'Коралловый город' },
+    { id: 'magic-castle', title: 'Загадка волшебного замка', description: 'Сказка о тайнах старинного замка, где живет магия.', characterPlaceholder: 'маленький призрак', locationPlaceholder: 'замок Спящей Луны' },
+    { id: 'dragon-friend', title: 'Дружба с драконом', description: 'История о том, как ребенок подружился с настоящим драконом.', characterPlaceholder: 'добрый огнедышащий дракончик', locationPlaceholder: 'Драконьи горы' },
+    { id: 'detective-story', title: 'Маленький детектив', description: 'Запутанная история, где главный герой расследует пропажу сладостей.', characterPlaceholder: 'проницательный хомяк-сыщик', locationPlaceholder: 'город Сладкоежек' },
+    { id: 'time-travel', title: 'Путешествие во времени', description: 'Приключение с машиной времени, динозаврами и рыцарями.', characterPlaceholder: 'мудрая сова-профессор', locationPlaceholder: 'эпоха динозавров' },
+    { id: 'circus-dream', title: 'Цирковая мечта', description: 'История о том, как мечта выступить на арене цирка стала реальностью.', characterPlaceholder: 'талантливый слоненок-жонглер', locationPlaceholder: 'цирк-шапито "Фантазия"' },
+    { id: 'candy-kingdom', title: 'Королевство сладостей', description: 'Сладкая сказка о приключениях в стране из шоколада и мармелада.', characterPlaceholder: 'зефирный человечек', locationPlaceholder: 'Шоколадная река' },
+    { id: 'talking-animals', title: 'Говорящие животные', description: 'История о ферме, где все животные умеют разговаривать.', characterPlaceholder: 'хитрый говорящий кот', locationPlaceholder: 'ферма "Солнечный луг"' },
 ];
 
-export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userStatus }) => {
+
+export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userStatus, onPremiumFeatureClick, remainingCreations }) => {
   const [name, setName] = useState('');
   const [character, setCharacter] = useState('');
   const [location, setLocation] = useState('');
@@ -48,9 +62,13 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userS
     }
   }, [templateId]);
   
+  // Reset interactive mode if user status changes and they can't use it
   useEffect(() => {
-    if (!canUsePremiumFeatures) setIsInteractive(false);
+    if (!canUsePremiumFeatures) {
+      setIsInteractive(false);
+    }
   }, [canUsePremiumFeatures]);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,17 +83,17 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userS
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* Step 1: Template */}
       <div>
-        <h3 className="text-lg font-semibold text-indigo-400 mb-3">Шаг 1: Выберите основу для сказки</h3>
-        <label htmlFor="template" className="block text-sm font-medium text-slate-300 mb-2">Шаблон истории</label>
-        <select
-          id="template"
-          value={templateId}
-          onChange={(e) => setTemplateId(e.target.value)}
-          className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
-        >
-          {storyTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-        </select>
-        <p className="text-sm text-slate-400 mt-2">{selectedTemplate.description}</p>
+          <h3 className="text-lg font-semibold text-indigo-400 mb-3">Шаг 1: Выберите основу для сказки</h3>
+          <label htmlFor="template" className="block text-sm font-medium text-slate-300 mb-2">Шаблон истории</label>
+          <select
+            id="template"
+            value={templateId}
+            onChange={(e) => setTemplateId(e.target.value)}
+            className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+          >
+            {storyTemplates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+          </select>
+          <p className="text-sm text-slate-400 mt-2">{selectedTemplate.description}</p>
       </div>
 
       {/* Step 2: Details */}
@@ -101,27 +119,40 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userS
       <div>
         <h3 className="text-lg font-semibold text-indigo-400 mb-3">Шаг 3: Настройте сказку</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-          <div className="relative">
-            <label htmlFor="voice" className="block text-sm font-medium text-slate-300 mb-2">Голос рассказчика</label>
-            <select id="voice" value={voiceId} onChange={(e) => setVoiceId(e.target.value)} disabled={!canUsePremiumFeatures} className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition disabled:bg-slate-700/50 disabled:cursor-not-allowed">
-              {voiceOptions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-            {!canUsePremiumFeatures && <div className="absolute inset-0 flex items-center justify-end pr-3 text-slate-400"><LockIcon className="w-5 h-5"/></div>}
-          </div>
-          <div className="flex items-center justify-center pt-6">
-            <label htmlFor="interactive-toggle" className={`flex items-center ${canUsePremiumFeatures ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
-              <div className="relative">
-                <input type="checkbox" id="interactive-toggle" className="sr-only" checked={isInteractive} onChange={() => setIsInteractive(!isInteractive)} disabled={!canUsePremiumFeatures} />
-                <div className={`block w-14 h-8 rounded-full transition-colors ${canUsePremiumFeatures ? 'bg-slate-600' : 'bg-slate-600/50'}`}></div>
-                <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isInteractive && canUsePremiumFeatures ? 'transform translate-x-full bg-indigo-400' : ''}`}></div>
-              </div>
-              <div className={`ml-3 font-medium ${canUsePremiumFeatures ? 'text-slate-300' : 'text-slate-500'}`}>
-                Интерактивная сказка
-              </div>
-            </label>
-          </div>
+            <div className="relative">
+                <label htmlFor="voice" className="block text-sm font-medium text-slate-300 mb-2">Голос рассказчика</label>
+                <select id="voice" value={voiceId} onChange={(e) => setVoiceId(e.target.value)} disabled={!canUsePremiumFeatures} className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition disabled:bg-slate-700/50 disabled:cursor-not-allowed">
+                {voiceOptions.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+                {!canUsePremiumFeatures && (
+                  <div 
+                    className="absolute inset-0 flex items-center justify-end pr-3 text-slate-400 cursor-pointer"
+                    onClick={onPremiumFeatureClick}
+                  >
+                    <LockIcon className="w-5 h-5"/>
+                  </div>
+                )}
+            </div>
+            <div className="flex items-center justify-center pt-6">
+                <label htmlFor="interactive-toggle" className={`flex items-center ${canUsePremiumFeatures ? 'cursor-pointer' : 'cursor-not-allowed'}`} onClick={(e) => { if (!canUsePremiumFeatures) { e.preventDefault(); onPremiumFeatureClick(); } }}>
+                    <div className="relative">
+                    <input type="checkbox" id="interactive-toggle" className="sr-only" checked={isInteractive} onChange={() => setIsInteractive(!isInteractive)} disabled={!canUsePremiumFeatures} />
+                    <div className={`block w-14 h-8 rounded-full transition-colors ${canUsePremiumFeatures ? 'bg-slate-600' : 'bg-slate-600/50'}`}></div>
+                    <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${isInteractive && canUsePremiumFeatures ? 'transform translate-x-full bg-indigo-400' : ''}`}></div>
+                    </div>
+                    <div className={`ml-3 font-medium ${canUsePremiumFeatures ? 'text-slate-300' : 'text-slate-500'}`}>
+                    Интерактивная сказка
+                    </div>
+                </label>
+            </div>
         </div>
       </div>
+
+      {remainingCreations !== null && remainingCreations >= 0 && (
+          <p className="text-center text-sm text-slate-400 !mt-6">
+              Осталось бесплатных сказок: <span className="font-bold text-indigo-400">{remainingCreations}</span>
+          </p>
+      )}
 
       <button
         type="submit"
@@ -136,5 +167,5 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onSubmit, isLoading, userS
 };
 
 const LockIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
 );
