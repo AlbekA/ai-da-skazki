@@ -25,7 +25,7 @@ const scenarios = [
   { id: 'arctic', title: 'Об Арктике', character: 'белый медвежонок', setting: 'снежная долина', feature: 'отправляется в путешествие на льдине' },
 ];
 
-export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, user, subscriptionTier, onLockClick }) => {
+export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, user: _user, subscriptionTier, onLockClick }) => {
   const [character, setCharacter] = useState('');
   const [setting, setSetting] = useState('');
   const [feature, setFeature] = useState('');
