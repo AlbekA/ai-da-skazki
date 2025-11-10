@@ -1,34 +1,49 @@
 import React, { useState } from 'react';
 import { Loader } from './Loader';
+import { LockIcon } from './icons/LockIcon';
+import type { User } from '@supabase/supabase-js';
 
 interface StoryFormProps {
-  onStoryStart: (prompt: string, voiceId: string) => void;
+  onStoryStart: (prompt: string, voiceId: string, isInteractive: boolean) => void;
   isLoading: boolean;
+  user: User | null;
+  onLockClick: () => void;
 }
 
-export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading }) => {
+export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, user, onLockClick }) => {
   const [character, setCharacter] = useState('');
   const [setting, setSetting] = useState('');
   const [feature, setFeature] = useState('');
   const [age, setAge] = useState('5');
-  const [voice, setVoice] = useState('Kore'); // Default voice
+  const [voice, setVoice] = useState('Kore');
+  const [isInteractive, setIsInteractive] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
 
+    if (isInteractive && !user) { // Assuming any logged-in user has access for now
+        onLockClick();
+        return;
+    }
+
     const prompt = `
-      Напиши начало волшебной сказки на русском языке для ребенка ${age} лет.
+      - Для ребенка ${age} лет.
       - Главный герой: ${character || 'смелый котенок'}
       - Место действия: ${setting || 'загадочный лес'}
       - Ключевая особенность сюжета: ${feature || 'поиски волшебного цветка'}
-      
-      История должна быть доброй, увлекательной и закончиться на интригующем моменте, предлагая читателю сделать выбор.
-      Сгенерируй JSON с двумя ключами: "story" (первая часть сказки, 2-3 абзаца) и "choices" (массив из трех коротких вариантов продолжения).
     `;
 
-    onStoryStart(prompt.trim(), voice);
+    onStoryStart(prompt.trim(), voice, isInteractive);
   };
+  
+  const handleInteractiveToggle = () => {
+    if (!user) { // Or check for subscription tier
+        onLockClick();
+    } else {
+        setIsInteractive(!isInteractive);
+    }
+  }
 
   if (isLoading) {
     return <Loader />;
@@ -111,6 +126,29 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading })
             </select>
           </div>
       </div>
+
+       {/* Interactive Toggle */}
+      <div 
+        className="relative flex items-center justify-between bg-slate-700/50 p-4 rounded-lg cursor-pointer group"
+        onClick={handleInteractiveToggle}
+        title="Интерактивные сказки позволяют влиять на сюжет, делая выбор в ключевых моментах истории. Доступно по подписке."
+      >
+        <div className="flex items-center gap-3">
+            <LockIcon className={`w-5 h-5 transition-colors ${user ? 'text-purple-400' : 'text-slate-500'}`} />
+            <div>
+                <span className={`font-semibold transition-colors ${user ? 'text-slate-200' : 'text-slate-500'}`}>
+                    Интерактивная сказка
+                </span>
+                <p className={`text-xs transition-colors ${user ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Вы сможете влиять на сюжет
+                </p>
+            </div>
+        </div>
+        <div className={`relative w-12 h-6 rounded-full transition-colors ${isInteractive && user ? 'bg-indigo-600' : 'bg-slate-600'}`}>
+          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${isInteractive && user ? 'transform translate-x-6' : ''}`}></div>
+        </div>
+      </div>
+      
       <button
         type="submit"
         disabled={isLoading}

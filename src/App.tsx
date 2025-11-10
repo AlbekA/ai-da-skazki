@@ -26,7 +26,7 @@ const App: React.FC = () => {
   // Auth & Subscription State
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
+  const [_session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [storyCount, setStoryCount] = useState(0);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
@@ -80,7 +80,7 @@ const App: React.FC = () => {
     return true;
   }
 
-  const handleStoryStart = async (prompt: string, selectedVoiceId: string) => {
+  const handleStoryStart = async (prompt: string, selectedVoiceId: string, isInteractive: boolean) => {
     if (!checkUsageLimit()) return;
     
     setIsLoading(true);
@@ -89,12 +89,28 @@ const App: React.FC = () => {
     setChoices([]);
     setVoiceId(selectedVoiceId);
 
+    const basePrompt = `
+      Напиши начало волшебной сказки на русском языке.
+      ${prompt}
+      История должна быть доброй, увлекательной и закончиться на интригующем моменте.
+    `;
+
+    const interactivePrompt = `
+      ${basePrompt}
+      Сгенерируй JSON с двумя ключами: "story" (первая часть сказки, 2-3 абзаца) и "choices" (массив из трех коротких вариантов продолжения).
+    `;
+    
+    const nonInteractivePrompt = `
+      ${basePrompt}
+       Сгенерируй JSON с одним ключом: "story" (целая, законченная сказка из 5-6 абзацев).
+    `;
+
     try {
-      const { story, choices: newChoices } = await generateStoryPart(prompt);
+      const { story, choices: newChoices } = await generateStoryPart(isInteractive ? interactivePrompt : nonInteractivePrompt, isInteractive);
       const audioData = await generateAudio(story, selectedVoiceId);
       
       setStoryParts([{ text: story, audioData }]);
-      setChoices(newChoices);
+      setChoices(newChoices || []);
       setAutoplayIndex(0); // Autoplay the first part
 
       const newCount = storyCount + 1;
@@ -128,12 +144,12 @@ const App: React.FC = () => {
     `;
 
     try {
-      const { story, choices: newChoices } = await generateStoryPart(prompt);
+      const { story, choices: newChoices } = await generateStoryPart(prompt, true);
       const audioData = await generateAudio(story, voiceId);
       
       const newPart = { text: story, audioData };
       setStoryParts(prevParts => [...prevParts, newPart]);
-      setChoices(newChoices);
+      setChoices(newChoices || []);
       setAutoplayIndex(storyParts.length); // Autoplay the new part
     } catch (err) {
       setError('Не удалось загрузить продолжение. Пожалуйста, попробуйте выбрать еще раз.');
@@ -157,6 +173,14 @@ const App: React.FC = () => {
     localStorage.setItem('subscriptionTier', tier);
     setShowSubscriptionModal(false);
   }
+  
+  const handleLockClick = () => {
+    if (!user) {
+        setShowAuthModal(true);
+    } else {
+        setShowSubscriptionModal(true);
+    }
+  }
 
   return (
     <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
@@ -166,7 +190,12 @@ const App: React.FC = () => {
           {error && <p className="text-center text-red-400 bg-red-500/10 p-3 rounded-md mb-4">{error}</p>}
           
           {storyParts.length === 0 ? (
-            <StoryForm onStoryStart={handleStoryStart} isLoading={isLoading} />
+            <StoryForm 
+              onStoryStart={handleStoryStart} 
+              isLoading={isLoading} 
+              user={user}
+              onLockClick={handleLockClick}
+            />
           ) : (
             <StoryDisplay
               storyParts={storyParts}

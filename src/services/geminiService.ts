@@ -1,40 +1,59 @@
+// FIX: Removed non-existent 'ResponseSchema' from import.
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-// Fix: Initialize GoogleGenAI with process.env.API_KEY directly, assuming it's available in the execution context.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export async function generateStoryPart(prompt: string): Promise<{ story: string; choices: string[] }> {
+// FIX: Removed 'ResponseSchema' type annotation. TypeScript will infer the type.
+const interactiveSchema = {
+    type: Type.OBJECT,
+    properties: {
+        story: {
+            type: Type.STRING,
+            description: 'A part of a fairy tale in Russian, about 2-3 paragraphs long.'
+        },
+        choices: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: 'Three possible continuations of the story for the user to choose from, in Russian. Each choice should be a short phrase.'
+        }
+    },
+    required: ['story', 'choices']
+};
+
+// FIX: Removed 'ResponseSchema' type annotation. TypeScript will infer the type.
+const nonInteractiveSchema = {
+    type: Type.OBJECT,
+    properties: {
+        story: {
+            type: Type.STRING,
+            description: 'A complete, self-contained fairy tale in Russian, about 5-6 paragraphs long.'
+        }
+    },
+    required: ['story']
+};
+
+
+export async function generateStoryPart(prompt: string, isInteractive: boolean): Promise<{ story: string; choices?: string[] }> {
   try {
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {
             responseMimeType: 'application/json',
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    story: {
-                        type: Type.STRING,
-                        description: 'A part of a fairy tale in Russian, about 2-3 paragraphs long.'
-                    },
-                    choices: {
-                        type: Type.ARRAY,
-                        items: { type: Type.STRING },
-                        description: 'Three possible continuations of the story for the user to choose from, in Russian. Each choice should be a short phrase.'
-                    }
-                },
-                required: ['story', 'choices']
-            }
+            responseSchema: isInteractive ? interactiveSchema : nonInteractiveSchema,
         }
     });
-    // Fix: Access the text property directly from the response.
-    const jsonText = response.text.trim();
-    if (!jsonText || !jsonText.startsWith('{') || !jsonText.endsWith('}')) {
-        console.error("Received non-JSON or empty response:", jsonText);
-        throw new Error("API did not return valid JSON.");
+    
+    const jsonText = response.text;
+    if (!jsonText) {
+        console.error("Received empty text response from API.");
+        throw new Error("API did not return any text.");
     }
 
-    const result = JSON.parse(jsonText);
+    const trimmedText = jsonText.trim();
+    
+    // FIX: Removed brittle check for JSON format. `JSON.parse` will throw an error on invalid JSON, which will be caught.
+    const result = JSON.parse(trimmedText);
     return result;
   } catch (error) {
     console.error("Error generating story part:", error);
@@ -44,7 +63,6 @@ export async function generateStoryPart(prompt: string): Promise<{ story: string
 
 export async function generateAudio(storyText: string, voiceId: string): Promise<string> {
   if (!storyText.trim()) {
-    // Do not call the API for empty strings.
     return "";
   }
   try {
