@@ -26,7 +26,7 @@ const App: React.FC = () => {
     const [autoplayIndex, setAutoplayIndex] = useState<number | null>(null);
 
     // Auth & Subscription State
-    const [session, setSession] = useState<Session | null>(null);
+    const [_session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isSubModalOpen, setIsSubModalOpen] = useState(false);

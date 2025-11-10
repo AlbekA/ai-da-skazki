@@ -28,9 +28,9 @@ export async function generateStoryPart(prompt: string): Promise<{ story: string
         }
     });
 
-    const jsonText = response.text.trim();
-    if (!jsonText.startsWith('{') || !jsonText.endsWith('}')) {
-        console.error("Received non-JSON response:", jsonText);
+    const jsonText = response.text?.trim();
+    if (!jsonText || !jsonText.startsWith('{') || !jsonText.endsWith('}')) {
+        console.error("Received non-JSON or empty response:", jsonText);
         throw new Error("API did not return valid JSON.");
     }
 
