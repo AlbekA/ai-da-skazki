@@ -83,8 +83,8 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ storyParts, choices,
   };
 
   const playSegment = (index: number) => {
-    if (!audioContextRef.current || !audioBuffers[index]) return;
     initAudioContext();
+    if (!audioContextRef.current || !audioBuffers[index]) return;
     stopPlayback();
     
     const source = audioContextRef.current.createBufferSource();
