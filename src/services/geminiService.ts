@@ -1,7 +1,7 @@
 // FIX: Removed non-existent 'ResponseSchema' from import.
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 // FIX: Removed 'ResponseSchema' type annotation. TypeScript will infer the type.
 const interactiveSchema = {
