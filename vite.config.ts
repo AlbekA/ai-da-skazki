@@ -4,6 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    'process.env': {}
+  },
   plugins: [
     react(),
     VitePWA({
@@ -11,7 +14,7 @@ export default defineConfig({
       includeAssets: ['vite.svg'],
       manifest: {
         name: 'AI да сказки',
-        short_name: 'Сказки',
+        short_name: 'AI Сказки',
         description: 'Создайте волшебную аудиосказку для вашего ребенка с помощью ИИ.',
         theme_color: '#4f46e5',
         background_color: '#0f172a',
