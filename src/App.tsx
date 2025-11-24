@@ -23,6 +23,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [voiceId, setVoiceId] = useState('Kore');
   const [autoplayIndex, setAutoplayIndex] = useState<number | null>(null);
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   // Auth & Subscription State
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -118,6 +119,7 @@ const App: React.FC = () => {
       const newCount = storyCount + 1;
       setStoryCount(newCount);
       localStorage.setItem('storyCount', newCount.toString());
+      setShowStoryModal(true);
 
     } catch (err) {
       setError('Произошла ошибка при создании сказки. Пожалуйста, попробуйте снова.');
@@ -201,12 +203,17 @@ const App: React.FC = () => {
     setStoryCount(0);
     setShowProfileModal(false);
   };
+
+  const handleCloseStory = () => {
+    setShowStoryModal(false);
+    setAutoplayIndex(null);
+  };
   
   const storyLimit = user ? MAX_FREE_STORIES_AUTH : MAX_FREE_STORIES_UNAUTH;
   const storiesRemaining = Math.max(0, storyLimit - storyCount);
 
   return (
-    <div className="bg-slate-900 min-h-screen text-white font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
+    <div className="min-h-screen text-white font-sans p-4 sm:p-6 md:p-8 flex flex-col items-center">
       <div className="w-full max-w-3xl mx-auto space-y-8 pb-20">
         <Header 
           onProfileClick={handleProfileClick} 
@@ -217,16 +224,22 @@ const App: React.FC = () => {
         <main>
           {error && <p className="text-center text-red-400 bg-red-500/10 p-3 rounded-md mb-4">{error}</p>}
           
-          {storyParts.length === 0 ? (
-            <StoryForm 
-              onStoryStart={handleStoryStart} 
-              isLoading={isLoading} 
-              user={user}
-              subscriptionTier={subscriptionTier}
-              onLockClick={handleLockClick}
-            />
-          ) : (
-            <StoryDisplay
+          {/* Always render StoryForm now */}
+          <StoryForm 
+            onStoryStart={handleStoryStart} 
+            isLoading={isLoading} 
+            user={user}
+            subscriptionTier={subscriptionTier}
+            onLockClick={handleLockClick}
+          />
+        </main>
+      </div>
+      <Footer />
+
+      {/* Modals */}
+      {showStoryModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-center justify-center p-4 animate-fade-in">
+             <StoryDisplay
               storyParts={storyParts}
               choices={choices}
               onChoiceSelected={handleChoiceSelected}
@@ -234,11 +247,11 @@ const App: React.FC = () => {
               onShare={handleShare}
               autoplayIndex={autoplayIndex}
               onAutoplayComplete={() => setAutoplayIndex(null)}
+              onClose={handleCloseStory}
             />
-          )}
-        </main>
-      </div>
-      <Footer />
+        </div>
+      )}
+
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
       {showSubscriptionModal && <SubscriptionModal onClose={() => setShowSubscriptionModal(false)} onSubscribe={handleSubscribe} />}
       {showProfileModal && user && (
@@ -250,6 +263,16 @@ const App: React.FC = () => {
           onLogout={handleLogout}
         />
       )}
+      
+      <style>{`
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };

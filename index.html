@@ -13,6 +13,79 @@
     <style>
       body {
         font-family: 'Nunito', sans-serif;
+        margin: 0;
+        overflow-x: hidden;
+      }
+      
+      /* Magical Background */
+      .magic-bg {
+        background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -3;
+      }
+
+      .stars {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        z-index: -2;
+      }
+      
+      .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: white;
+        border-radius: 50%;
+        opacity: 0;
+        animation: twinkle 5s infinite;
+      }
+
+      @keyframes twinkle {
+        0% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 0.8; transform: scale(1.2); }
+        100% { opacity: 0; transform: scale(0.5); }
+      }
+      
+      .particles {
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         z-index: -1;
+         pointer-events: none;
+      }
+      
+      .particle {
+        position: absolute;
+        background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+        animation: float 10s infinite ease-in-out;
+      }
+
+      @keyframes float {
+        0% { transform: translateY(0) translateX(0); opacity: 0; }
+        50% { opacity: 0.5; }
+        100% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+      }
+      
+      .fog {
+         position: fixed;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         background: linear-gradient(180deg, rgba(79, 70, 229, 0) 0%, rgba(79, 70, 229, 0.15) 100%);
+         z-index: -1;
+         pointer-events: none;
       }
     </style>
 <script type="importmap">
@@ -31,7 +104,38 @@
 </script>
 </head>
   <body>
+    <div class="magic-bg"></div>
+    <div class="stars" id="stars-container"></div>
+    <div class="particles" id="particles-container"></div>
+    <div class="fog"></div>
     <div id="root"></div>
     <script type="module" src="./src/index.tsx"></script>
+    <script>
+      // Dynamic stars and particles
+      const starsContainer = document.getElementById('stars-container');
+      const particlesContainer = document.getElementById('particles-container');
+      
+      for(let i=0; i<100; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 5 + 's';
+        starsContainer.appendChild(star);
+      }
+      
+      for(let i=0; i<20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const size = Math.random() * 10 + 5;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        particle.style.top = (Math.random() * 100 + 50) + '%';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        particle.style.animationDelay = Math.random() * 5 + 's';
+        particlesContainer.appendChild(particle);
+      }
+    </script>
   </body>
 </html>

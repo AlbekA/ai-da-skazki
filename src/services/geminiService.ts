@@ -1,9 +1,7 @@
-// FIX: Removed non-existent 'ResponseSchema' from import.
 import { GoogleGenAI, Modality, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// FIX: Removed 'ResponseSchema' type annotation. TypeScript will infer the type.
 const interactiveSchema = {
     type: Type.OBJECT,
     properties: {
@@ -20,7 +18,6 @@ const interactiveSchema = {
     required: ['story', 'choices']
 };
 
-// FIX: Removed 'ResponseSchema' type annotation. TypeScript will infer the type.
 const nonInteractiveSchema = {
     type: Type.OBJECT,
     properties: {
@@ -52,7 +49,6 @@ export async function generateStoryPart(prompt: string, isInteractive: boolean):
 
     const trimmedText = jsonText.trim();
     
-    // FIX: Removed brittle check for JSON format. `JSON.parse` will throw an error on invalid JSON, which will be caught.
     const result = JSON.parse(trimmedText);
     return result;
   } catch (error) {

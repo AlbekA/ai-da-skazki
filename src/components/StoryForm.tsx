@@ -13,6 +13,7 @@ interface StoryFormProps {
 }
 
 const scenarios = [
+  { id: 'custom', title: '✨ Своя сказка', character: '', setting: '', feature: '' },
   { id: 'friendship', title: 'О дружбе', character: 'котенок и щенок', setting: 'солнечная поляна', feature: 'помогают заблудившемуся светлячку' },
   { id: 'space', title: 'О космосе', character: 'маленькая ракета', setting: 'шоколадная планета', feature: 'ищет друзей среди звезд' },
   { id: 'magic', title: 'О загадке', character: 'любопытный ежик', setting: 'старый дуб с дуплом', feature: 'находит таинственную карту сокровищ' },
@@ -32,7 +33,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
   const [age, setAge] = useState('5');
   const [voice, setVoice] = useState('Kore');
   const [isInteractive, setIsInteractive] = useState(false);
-  const [activeScenario, setActiveScenario] = useState<string | null>(null);
+  const [activeScenario, setActiveScenario] = useState<string | null>('custom');
   const [showScenarios, setShowScenarios] = useState(false);
 
 
@@ -85,14 +86,14 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
     }
   };
 
-  const selectedScenarioTitle = scenarios.find(s => s.id === activeScenario)?.title || 'Своя сказка';
+  const selectedScenarioTitle = scenarios.find(s => s.id === activeScenario)?.title || '✨ Своя сказка';
 
   if (isLoading) {
     return <Loader />;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800/50 p-6 md:p-8 rounded-2xl shadow-lg border border-slate-700 animate-fade-in">
+    <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800/60 backdrop-blur-md p-6 md:p-8 rounded-2xl shadow-2xl border border-slate-700/50 animate-fade-in relative z-10">
         
       {/* Scenario Selector */}
        <div className="relative">
@@ -102,7 +103,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
         <button
           type="button"
           onClick={() => setShowScenarios(!showScenarios)}
-          className="w-full flex items-center justify-between text-left p-3 rounded-md transition-all bg-slate-700 hover:bg-slate-600 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
+          className="w-full flex items-center justify-between text-left p-3 rounded-md transition-all bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500"
         >
           <span className="font-semibold text-white">{selectedScenarioTitle}</span>
           <svg className={`w-5 h-5 text-slate-400 transform transition-transform ${showScenarios ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -110,13 +111,13 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
           </svg>
         </button>
         {showScenarios && (
-          <div className="absolute z-10 top-full mt-2 w-full bg-slate-700 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto custom-scrollbar">
+          <div className="absolute z-20 top-full mt-2 w-full bg-slate-800 border border-slate-600 rounded-md shadow-xl max-h-60 overflow-y-auto custom-scrollbar">
             {scenarios.map(s => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => handleScenarioClick(s.id)}
-                className={`w-full text-left p-3 transition-colors text-white ${activeScenario === s.id ? 'bg-indigo-600' : 'hover:bg-slate-600'}`}
+                className={`w-full text-left p-3 transition-colors text-white ${activeScenario === s.id ? 'bg-indigo-600' : 'hover:bg-slate-700'}`}
               >
                 {s.title}
               </button>
@@ -134,9 +135,9 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
             type="text"
             id="character"
             value={character}
-            onChange={(e) => { setCharacter(e.target.value); setActiveScenario(null); }}
-            placeholder="Например, храбрый мышонок"
-            className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+            onChange={(e) => { setCharacter(e.target.value); setActiveScenario('custom'); }}
+            placeholder="Например, Саша"
+            className="w-full bg-slate-700/50 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition placeholder-slate-500"
           />
         </div>
         <div>
@@ -147,9 +148,9 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
             type="text"
             id="setting"
             value={setting}
-            onChange={(e) => { setSetting(e.target.value); setActiveScenario(null); }}
+            onChange={(e) => { setSetting(e.target.value); setActiveScenario('custom'); }}
             placeholder="Например, хрустальный замок"
-            className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+            className="w-full bg-slate-700/50 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition placeholder-slate-500"
           />
         </div>
       </div>
@@ -161,9 +162,9 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
           type="text"
           id="feature"
           value={feature}
-          onChange={(e) => { setFeature(e.target.value); setActiveScenario(null); }}
+          onChange={(e) => { setFeature(e.target.value); setActiveScenario('custom'); }}
           placeholder="Например, о спасении друга"
-          className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+          className="w-full bg-slate-700/50 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition placeholder-slate-500"
         />
       </div>
 
@@ -176,7 +177,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
               id="age"
               value={age}
               onChange={(e) => setAge(e.target.value)}
-              className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+              className="w-full bg-slate-700/50 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
             >
               <option value="3">3-4 года</option>
               <option value="5">5-6 лет</option>
@@ -192,7 +193,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
               id="voice"
               value={voice}
               onChange={handleVoiceChange}
-              className="w-full bg-slate-700 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
+              className="w-full bg-slate-700/50 border-slate-600 text-slate-200 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition"
             >
               <option value="Kore">Женский (Спокойный)</option>
               <option value="Puck">Мужской (Дружелюбный) {!subscriptionTier && '🔒'}</option>
@@ -204,7 +205,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
 
        {/* Interactive Toggle */}
       <div 
-        className={`relative flex items-center justify-between bg-slate-700/50 p-4 rounded-lg group ${!subscriptionTier ? 'cursor-pointer' : 'cursor-pointer'}`}
+        className={`relative flex items-center justify-between bg-slate-700/30 p-4 rounded-lg group ${!subscriptionTier ? 'cursor-pointer' : 'cursor-pointer'}`}
         onClick={handleInteractiveToggle}
         title="Интерактивные сказки позволяют влиять на сюжет, делая выбор в ключевых моментах истории. Доступно по подписке."
       >
@@ -227,7 +228,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({ onStoryStart, isLoading, u
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full flex items-center justify-center gap-3 px-6 py-4 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition-all transform hover:scale-105 disabled:bg-indigo-500/50"
+        className="w-full flex items-center justify-center gap-3 px-6 py-4 border border-transparent text-base font-medium rounded-md shadow-lg shadow-indigo-500/20 text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-indigo-500 transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <SparklesIcon className="w-5 h-5"/>
         {isLoading ? 'Создаем магию...' : 'Начать сказку'}
